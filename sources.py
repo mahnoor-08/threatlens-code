@@ -120,11 +120,22 @@ def extract_hostname(target: str, target_type: str) -> str | None:
 
 
 def _get_secret(key: str) -> str | None:
-    """Safely read a key from Streamlit secrets, returning None if absent."""
+    """
+    Resolve an API key by checking, in order:
+    1. A key the user entered in this browser session (st.session_state).
+    2. A key configured server-side in Streamlit secrets (.streamlit/secrets.toml).
+
+    This lets each visitor supply their own key via the UI, while still
+    allowing an operator to pre-configure a shared key via secrets.
+    """
+    session_value = st.session_state.get(key)
+    if session_value:
+        return str(session_value)
+
     try:
         value = st.secrets.get(key)
     except Exception:
-        return None
+        value = None
     if not value:
         return None
     return str(value)
