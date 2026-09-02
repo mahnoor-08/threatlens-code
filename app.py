@@ -38,7 +38,7 @@ VERDICT_DISPLAY = {
     "UNKNOWN": ("⚪", "UNKNOWN"),
 }
 
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-3.6-flash"
 
 PLACEHOLDER_BY_TYPE = {
     "IP Address": "8.8.8.8",
