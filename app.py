@@ -136,10 +136,10 @@ def call_gemini(prompt: str) -> dict[str, Any]:
 
     Raises on any failure; callers are expected to catch and handle errors.
     """
-    api_key = st.secrets.get("GEMINI_API_KEY")
+    api_key = st.session_state.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "Gemini API key is not configured. Add GEMINI_API_KEY to secrets."
+            "Gemini API key is not set. Enter it in the sidebar to run AI analysis."
         )
 
     client = genai.Client(api_key=api_key)
@@ -280,6 +280,41 @@ def render_header() -> None:
     )
 
 
+def render_api_key_sidebar() -> None:
+    """
+    Let each visitor supply their own API keys for this browser session.
+    Keys are stored only in st.session_state (memory, per-session) and are
+    never written to disk or shared with other visitors.
+    """
+    with st.sidebar:
+        st.header("API Keys")
+        st.caption(
+            "Enter your own keys to run analyses. Keys stay in your browser "
+            "session only and are never stored on the server."
+        )
+
+        vt_key = st.text_input(
+            "VirusTotal API Key",
+            type="password",
+            value=st.session_state.get("VIRUSTOTAL_API_KEY", ""),
+            help="Get a free key at virustotal.com after creating an account.",
+        )
+        gemini_key = st.text_input(
+            "Gemini API Key",
+            type="password",
+            value=st.session_state.get("GEMINI_API_KEY", ""),
+            help="Get a free key at aistudio.google.com/apikey.",
+        )
+
+        st.session_state["VIRUSTOTAL_API_KEY"] = vt_key
+        st.session_state["GEMINI_API_KEY"] = gemini_key
+
+        if vt_key and gemini_key:
+            st.success("Both keys set for this session.")
+        else:
+            st.warning("Enter both keys to run a full analysis.")
+
+
 def render_input_form() -> tuple[bool, str, str, str]:
     with st.form("threatlens_form"):
         col1, col2 = st.columns(2)
@@ -341,8 +376,19 @@ def run_analysis(target: str, target_type: str, knowledge_level: str) -> None:
 
 def main() -> None:
     render_header()
+    render_api_key_sidebar()
     submitted, target, target_type, knowledge_level = render_input_form()
     if submitted:
+        if not st.session_state.get("VIRUSTOTAL_API_KEY") and not st.secrets.get(
+            "VIRUSTOTAL_API_KEY"
+        ):
+            st.error("Please enter your VirusTotal API key in the sidebar first.")
+            return
+        if not st.session_state.get("GEMINI_API_KEY") and not st.secrets.get(
+            "GEMINI_API_KEY"
+        ):
+            st.error("Please enter your Gemini API key in the sidebar first.")
+            return
         run_analysis(target, target_type, knowledge_level)
 
 
